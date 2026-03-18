@@ -1,0 +1,4 @@
+export enum BatchType {
+  ORIGINAL = 'ORIGINAL',
+  COMPLEMENTARY = 'COMPLEMENTARIO',
+}

@@ -1,0 +1,12 @@
+FROM postgres:16-alpine
+
+# Override the default pg_hba.conf to use trust authentication for development
+RUN echo "local   all             all                                     trust" > /pg_hba.conf && \
+    echo "host    all             all             127.0.0.1/32            trust" >> /pg_hba.conf && \
+    echo "host    all             all             ::1/128                 trust" >> /pg_hba.conf && \
+    echo "host    all             all             0.0.0.0/0               md5" >> /pg_hba.conf && \
+    echo "local   replication     all                                     trust" >> /pg_hba.conf && \
+    echo "host    replication     all             127.0.0.1/32            trust" >> /pg_hba.conf && \
+    echo "host    replication     all             ::1/128                 trust" >> /pg_hba.conf
+
+COPY pg_hba.conf /etc/postgresql/pg_hba.conf

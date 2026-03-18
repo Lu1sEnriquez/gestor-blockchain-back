@@ -9,15 +9,27 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "jest --passWithNoTests",
+    "test:unit": "jest test/unit --passWithNoTests",
+    "test:integration": "jest test/integration --passWithNoTests",
+    "test:contract": "jest test/contract --passWithNoTests",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "check": "run-s lint typecheck test",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "typeorm": "ts-node --project tsconfig.typeorm.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js",
+    "migration:generate": "npm run typeorm -- -d src/shared/db/data-source.ts migration:generate migrations/auto",
+    "migration:run": "npm run typeorm -- -d src/shared/db/data-source.ts migration:run",
+    "migration:revert": "npm run typeorm -- -d src/shared/db/data-source.ts migration:revert"
   },
   "dependencies": {
+    "@types/express": "^5.0.6",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "ethers": "^6.16.0",
+    "express": "^5.2.1",
     "lucide-react": "^0.577.0",
     "next": "16.1.7",
     "pg": "^8.20.0",
@@ -33,6 +45,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@testcontainers/postgresql": "^11.13.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -41,10 +54,13 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.7",
     "jest": "^30.3.0",
+    "npm-run-all": "^4.1.5",
     "supertest": "^7.2.2",
     "tailwindcss": "^4",
     "testcontainers": "^11.13.0",
     "ts-jest": "^29.4.6",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "^5"
   }
 }
