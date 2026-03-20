@@ -6,8 +6,11 @@ import {
   type CreateUserResponse,
   type ListTemplatesRequest,
   type ListTemplatesResponse,
+  type Template,
   type CreateTemplateRequest,
   type CreateTemplateResponse,
+  type UpdateTemplateRequest,
+  type UpdateTemplateResponse,
   type CreateEventRequest,
   type CreateEventResponse,
   type GetEventResponse,
@@ -52,6 +55,7 @@ async function apiFetch<T>(
   };
 
   const config: RequestInit = {
+    credentials: 'include', // Enviar cookies de sesión al servidor
     ...rest,
     headers,
   };
@@ -89,19 +93,19 @@ async function apiFetch<T>(
 
 export const usersApi = {
   list: async (params: ListUsersRequest): Promise<ListUsersResponse> => {
-    const searchParams = new URLSearchParams({
-      requesterUserId: params.requesterUserId,
-    });
+    const searchParams = new URLSearchParams();
     if (params.role) {
       searchParams.set('role', params.role);
     }
-    return apiFetch<ListUsersResponse>(`/api/users?${searchParams.toString()}`);
+    const suffix = searchParams.toString();
+    return apiFetch<ListUsersResponse>(`/api/proxy/users${suffix ? `?${suffix}` : ''}`);
   },
 
   create: async (data: CreateUserRequest): Promise<CreateUserResponse> => {
-    return apiFetch<CreateUserResponse>('/api/users', {
+    const { requesterUserId: _, ...payload } = data;
+    return apiFetch<CreateUserResponse>('/api/proxy/users', {
       method: 'POST',
-      body: data,
+      body: payload,
     });
   },
 };
@@ -110,19 +114,65 @@ export const usersApi = {
 // TEMPLATES API
 // ============================================
 
+function normalizeTemplateSchema(template: Template): Template {
+  const sourceSchema =
+    template.fabricSchemaJson && Object.keys(template.fabricSchemaJson).length > 0
+      ? template.fabricSchemaJson
+      : template.craftSchemaJson;
+
+  return {
+    ...template,
+    fabricSchemaJson: sourceSchema,
+    craftSchemaJson: sourceSchema,
+  };
+}
+
 export const templatesApi = {
   list: async (params: ListTemplatesRequest): Promise<ListTemplatesResponse> => {
-    const searchParams = new URLSearchParams({
-      requesterUserId: params.requesterUserId,
-    });
-    return apiFetch<ListTemplatesResponse>(`/api/templates?${searchParams.toString()}`);
+    void params;
+    const templates = await apiFetch<ListTemplatesResponse>('/api/proxy/templates');
+    return templates.map(normalizeTemplateSchema);
   },
 
   create: async (data: CreateTemplateRequest): Promise<CreateTemplateResponse> => {
-    return apiFetch<CreateTemplateResponse>('/api/templates', {
+    const { requesterUserId: _, fabricSchemaJson, craftSchemaJson, ...rest } = data;
+    const payload = {
+      ...rest,
+      // Contrato nuevo preferido
+      fabricSchemaJson,
+      // Compatibilidad con backend actual
+      craftSchemaJson: craftSchemaJson ?? fabricSchemaJson,
+    };
+
+    const created = await apiFetch<CreateTemplateResponse>('/api/proxy/templates', {
       method: 'POST',
-      body: data,
+      body: payload,
     });
+
+    return normalizeTemplateSchema(created);
+  },
+
+  update: async (data: UpdateTemplateRequest): Promise<UpdateTemplateResponse> => {
+    const {
+      requesterUserId: _,
+      templateId,
+      fabricSchemaJson,
+      craftSchemaJson,
+      ...rest
+    } = data;
+
+    const payload = {
+      ...rest,
+      fabricSchemaJson,
+      craftSchemaJson: craftSchemaJson ?? fabricSchemaJson,
+    };
+
+    const updated = await apiFetch<UpdateTemplateResponse>(`/api/proxy/templates/${templateId}`, {
+      method: 'PUT',
+      body: payload,
+    });
+
+    return normalizeTemplateSchema(updated);
   },
 };
 
@@ -132,39 +182,36 @@ export const templatesApi = {
 
 export const eventsApi = {
   create: async (data: CreateEventRequest): Promise<CreateEventResponse> => {
-    return apiFetch<CreateEventResponse>('/api/events', {
+    const { creatorUserId: _, ...payload } = data;
+    return apiFetch<CreateEventResponse>('/api/proxy/events', {
       method: 'POST',
-      body: data,
+      body: payload,
     });
   },
 
-  get: async (eventId: string, requesterUserId: string): Promise<GetEventResponse> => {
-    const searchParams = new URLSearchParams({ requesterUserId });
-    return apiFetch<GetEventResponse>(`/api/events/${eventId}?${searchParams.toString()}`);
+  get: async (eventId: string, _requesterUserId: string): Promise<GetEventResponse> => {
+    return apiFetch<GetEventResponse>(`/api/proxy/events/${eventId}`);
   },
 
   authorize: async (data: AuthorizeEventRequest): Promise<AuthorizeEventResponse> => {
-    return apiFetch<AuthorizeEventResponse>(`/api/events/${data.eventId}/authorize`, {
+    return apiFetch<AuthorizeEventResponse>(`/api/proxy/events/${data.eventId}/authorize`, {
       method: 'POST',
-      body: { authorizerUserId: data.authorizerUserId },
     });
   },
 
   sign: async (data: SignEventRequest): Promise<SignEventResponse> => {
-    return apiFetch<SignEventResponse>(`/api/events/${data.eventId}/sign`, {
+    return apiFetch<SignEventResponse>(`/api/proxy/events/${data.eventId}/sign`, {
       method: 'POST',
       body: {
-        signerUserId: data.signerUserId,
         documentHashes: data.documentHashes,
       },
     });
   },
 
   reconcileStaging: async (data: ReconcileStagingRequest): Promise<ReconcileStagingResponse> => {
-    return apiFetch<ReconcileStagingResponse>(`/api/events/${data.eventId}/staging/reconcile`, {
+    return apiFetch<ReconcileStagingResponse>(`/api/proxy/events/${data.eventId}/staging/reconcile`, {
       method: 'POST',
       body: {
-        operatorUserId: data.operatorUserId,
         declaredZones: data.declaredZones,
         rows: data.rows,
         zipBundles: data.zipBundles,
@@ -173,10 +220,9 @@ export const eventsApi = {
   },
 
   generate: async (data: GenerateDocumentsRequest): Promise<GenerateDocumentsResponse> => {
-    return apiFetch<GenerateDocumentsResponse>(`/api/events/${data.eventId}/generate`, {
+    return apiFetch<GenerateDocumentsResponse>(`/api/proxy/events/${data.eventId}/generate`, {
       method: 'POST',
       body: {
-        generatorUserId: data.generatorUserId,
         rows: data.rows,
         batchType: data.batchType,
         revokedHashToReplace: data.revokedHashToReplace,
@@ -185,10 +231,9 @@ export const eventsApi = {
   },
 
   revoke: async (data: RevokeEventRequest): Promise<RevokeEventResponse> => {
-    return apiFetch<RevokeEventResponse>(`/api/events/${data.eventId}/revoke`, {
+    return apiFetch<RevokeEventResponse>(`/api/proxy/events/${data.eventId}/revoke`, {
       method: 'POST',
       body: {
-        requesterUserId: data.requesterUserId,
         hashToRevoke: data.hashToRevoke,
         idempotencyKey: data.idempotencyKey,
       },
@@ -196,9 +241,11 @@ export const eventsApi = {
   },
 
   processRevocations: async (data: ProcessRevocationsRequest): Promise<ProcessRevocationsResponse> => {
-    return apiFetch<ProcessRevocationsResponse>('/api/events/revocations/process', {
+    return apiFetch<ProcessRevocationsResponse>('/api/proxy/events/revocations/process', {
       method: 'POST',
-      body: data,
+      body: {
+        maxJobs: data.maxJobs,
+      },
     });
   },
 };
@@ -230,15 +277,14 @@ export const verifyApi = {
 
 export const auditsApi = {
   list: async (params: ListAuditsRequest): Promise<ListAuditsResponse> => {
-    const searchParams = new URLSearchParams({
-      requesterUserId: params.requesterUserId,
-    });
+    const searchParams = new URLSearchParams();
     if (params.userId) searchParams.set('userId', params.userId);
     if (params.action) searchParams.set('action', params.action);
     if (params.affectedEntity) searchParams.set('affectedEntity', params.affectedEntity);
     if (params.limit) searchParams.set('limit', params.limit.toString());
 
-    return apiFetch<ListAuditsResponse>(`/api/audits?${searchParams.toString()}`);
+    const suffix = searchParams.toString();
+    return apiFetch<ListAuditsResponse>(`/api/proxy/audits${suffix ? `?${suffix}` : ''}`);
   },
 };
 

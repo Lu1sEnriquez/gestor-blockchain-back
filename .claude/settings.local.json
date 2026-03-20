@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat \"/c/Users/luisl/Desktop/GESTOR-BLOCKCHAIN/gestor-blockchain/app/\\(dashboard\\)/dashboard/templates/[id]/edit/page.tsx\")",
+      "Bash(cat \"/c/Users/luisl/Desktop/GESTOR-BLOCKCHAIN/gestor-blockchain/app/\\(dashboard\\)/dashboard/templates/new/page.tsx\")",
+      "Bash(wc -l /c/Users/luisl/Desktop/GESTOR-BLOCKCHAIN/gestor-blockchain/components/template-builder/*.tsx)",
+      "Bash(find /c/Users/luisl/Desktop/GESTOR-BLOCKCHAIN/gestor-blockchain/app -type d -name \"\\(dashboard\\)\" -o -name \"auth\" -o -name \"api\")",
+      "Bash(npx tsc:*)",
+      "Bash(ls -la /c/Users/luisl/Desktop/GESTOR-BLOCKCHAIN/gestor-blockchain/app/api/events/[id]/)",
+      "Bash(ls -la \"/c/Users/luisl/Desktop/GESTOR-BLOCKCHAIN/gestor-blockchain/app/\\(dashboard\\)/dashboard/templates/\")",
+      "Bash(ls \"c:/Users/luisl/Desktop/GESTOR-BLOCKCHAIN/gestor-blockchain/app/\\(dashboard\\)/dashboard/audits/\")"
+    ]
+  }
+}

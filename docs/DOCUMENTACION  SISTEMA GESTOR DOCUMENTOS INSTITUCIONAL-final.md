@@ -399,7 +399,7 @@ Nombre_Plantilla
 Prefijo_Folio
 (Cadena de texto - UNIQUE e Inmutable - Ej. "NA", "NC")
 ## ●
-Esquema_Craft_JSON
+Esquema_Plantilla_JSON
 (Objeto JSON)
 ## ●
 Creador_ID

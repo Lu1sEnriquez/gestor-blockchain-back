@@ -7,6 +7,8 @@ import {
   Shield,
   Search,
   Settings,
+  PenTool,
+  Lock,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -53,6 +55,20 @@ export const dashboardNavigation: NavSection[] = [
         icon: Calendar,
         roles: [UserRole.ADMIN, UserRole.CREATOR, UserRole.SIGNER],
         description: 'Crear y gestionar eventos documentales',
+      },
+      {
+        title: 'Bandeja de Firmas',
+        href: '/dashboard/approvals',
+        icon: PenTool,
+        roles: [UserRole.SIGNER],
+        description: 'Eventos pendientes de tu aprobacion y firma',
+      },
+      {
+        title: 'Boveda Digital',
+        href: '/dashboard/vault',
+        icon: Lock,
+        roles: [UserRole.SIGNER],
+        description: 'Gestiona tu firma autógrafa institucional',
       },
     ],
   },

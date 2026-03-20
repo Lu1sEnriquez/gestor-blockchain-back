@@ -102,6 +102,8 @@ export interface Template {
   id: string;
   templateName: string;
   folioPrefix: string;
+  fabricSchemaJson: Record<string, unknown>;
+  // Compatibilidad temporal durante la transición backend
   craftSchemaJson: Record<string, unknown>;
   isActive: boolean;
   createdAt: string;
@@ -118,10 +120,23 @@ export interface CreateTemplateRequest {
   requesterUserId: string;
   templateName: string;
   folioPrefix: string;
+  fabricSchemaJson: Record<string, unknown>;
+  // Compatibilidad temporal durante la transición backend
   craftSchemaJson: Record<string, unknown>;
 }
 
 export type CreateTemplateResponse = Template;
+
+export interface UpdateTemplateRequest {
+  requesterUserId: string;
+  templateId: string;
+  templateName?: string;
+  folioPrefix?: string;
+  fabricSchemaJson: Record<string, unknown>;
+  craftSchemaJson?: Record<string, unknown>;
+}
+
+export type UpdateTemplateResponse = Template;
 
 // ============================================
 // EVENT CONTRACTS

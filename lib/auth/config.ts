@@ -24,9 +24,17 @@ declare module 'next-auth/jwt' {
 }
 
 export const authConfig: NextAuthConfig = {
+  secret:
+    process.env.AUTH_SECRET ??
+    process.env.NEXTAUTH_SECRET ??
+    (process.env.NODE_ENV === 'development' ? 'dev-only-secret-change-in-production' : undefined),
   pages: {
     signIn: '/auth/signin',
     error: '/auth/error',
+  },
+  session: {
+    strategy: 'jwt',
+    maxAge: 60 * 60 * 8,
   },
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
@@ -82,8 +90,14 @@ export const authConfig: NextAuthConfig = {
         password: { label: 'Contrasena', type: 'password' },
       },
       async authorize(credentials) {
-        // WORKAROUND TEMPORAL: Autenticacion mock mientras no hay endpoint real
-        // TODO: Reemplazar con endpoint /api/auth/login cuando exista
+        const allowMockAuth =
+          process.env.NODE_ENV !== 'production' && process.env.AUTH_ALLOW_MOCK !== 'false';
+
+        if (!allowMockAuth) {
+          return null;
+        }
+
+        // TODO: Reemplazar con validacion contra fuente institucional
         const email = credentials?.email as string;
         const password = credentials?.password as string;
 
@@ -94,7 +108,7 @@ export const authConfig: NextAuthConfig = {
         // Mock users para desarrollo - ELIMINAR EN PRODUCCION
         const mockUsers: Record<string, SessionUser & { password: string }> = {
           'admin@itson.edu.mx': {
-            id: 'user-admin-001',
+            id: '550e8400-e29b-41d4-a716-446655440001',
             email: 'admin@itson.edu.mx',
             name: 'Administrador Sistema',
             roles: [UserRole.ADMIN],
@@ -102,7 +116,7 @@ export const authConfig: NextAuthConfig = {
             password: 'admin123',
           },
           'creator@itson.edu.mx': {
-            id: 'user-creator-001',
+            id: '550e8400-e29b-41d4-a716-446655440002',
             email: 'creator@itson.edu.mx',
             name: 'Maria Garcia Lopez',
             roles: [UserRole.CREATOR],
@@ -110,7 +124,7 @@ export const authConfig: NextAuthConfig = {
             password: 'creator123',
           },
           'signer@itson.edu.mx': {
-            id: 'user-signer-001',
+            id: '550e8400-e29b-41d4-a716-446655440003',
             email: 'signer@itson.edu.mx',
             name: 'Dr. Roberto Martinez',
             roles: [UserRole.SIGNER],
@@ -118,7 +132,7 @@ export const authConfig: NextAuthConfig = {
             password: 'signer123',
           },
           'auditor@itson.edu.mx': {
-            id: 'user-auditor-001',
+            id: '550e8400-e29b-41d4-a716-446655440004',
             email: 'auditor@itson.edu.mx',
             name: 'Ana Lucia Fernandez',
             roles: [UserRole.AUDITOR],
@@ -126,7 +140,7 @@ export const authConfig: NextAuthConfig = {
             password: 'auditor123',
           },
           'multi@itson.edu.mx': {
-            id: 'user-multi-001',
+            id: '550e8400-e29b-41d4-a716-446655440005',
             email: 'multi@itson.edu.mx',
             name: 'Carlos Multirol',
             roles: [UserRole.ADMIN, UserRole.CREATOR, UserRole.SIGNER],

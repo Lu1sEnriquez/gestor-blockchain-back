@@ -153,11 +153,33 @@ export function useEventActions(eventId: string, userId: string) {
     );
   };
 
+  const revoke = async (hashToRevoke: string, idempotencyKey: string) => {
+    return executeAction('revoke', () =>
+      bffClient.events.revoke({
+        eventId,
+        requesterUserId: userId,
+        hashToRevoke,
+        idempotencyKey,
+      })
+    );
+  };
+
+  const processRevocations = async (maxJobs?: number) => {
+    return executeAction('process-revocations', () =>
+      bffClient.events.processRevocations({
+        requesterUserId: userId,
+        maxJobs,
+      })
+    );
+  };
+
   return {
     authorize,
     sign,
     reconcileStaging,
     generate,
+    revoke,
+    processRevocations,
     isLoading,
     actionError,
     clearError: () => setActionError(null),

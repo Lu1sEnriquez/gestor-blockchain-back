@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { signOut } from 'next-auth/react';
-import { Menu, LogOut, User, ChevronDown, FileCheck } from 'lucide-react';
+import { Menu, LogOut, User, ChevronDown, FileCheck, Moon, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +18,7 @@ import {
 import { MobileSidebar } from './sidebar';
 import type { SessionUser } from '@/lib/auth/config';
 import { roleLabels, roleColors } from '@/lib/navigation';
+import { useTheme } from '@/components/providers/theme-provider';
 
 interface HeaderProps {
   user: SessionUser;
@@ -25,6 +26,7 @@ interface HeaderProps {
 
 export function Header({ user }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { isDark, toggleTheme } = useTheme();
 
   const initials = user.name
     .split(' ')
@@ -39,7 +41,7 @@ export function Header({ user }: HeaderProps) {
 
   return (
     <>
-      <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:px-6">
+      <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b bg-background/95 px-4 backdrop-blur supports-backdrop-filter:bg-background/60 lg:px-6">
         {/* Mobile menu button */}
         <div className="flex items-center gap-4 lg:hidden">
           <Button
@@ -106,6 +108,14 @@ export function Header({ user }: HeaderProps) {
                 <User className="mr-2 h-4 w-4" />
                 Mi perfil
               </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={toggleTheme} className="cursor-pointer">
+              {isDark ? (
+                <Sun className="mr-2 h-4 w-4" />
+              ) : (
+                <Moon className="mr-2 h-4 w-4" />
+              )}
+              {isDark ? 'Tema claro' : 'Tema oscuro'}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem

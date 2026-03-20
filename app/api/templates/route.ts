@@ -1,73 +1,83 @@
-import { NextRequest, NextResponse } from 'next/server';
-
-import {
-  CreateTemplateUseCase,
-  ListTemplatesUseCase,
-} from '@/src/modules/templates/application/use-cases/manage-templates.use-cases';
-import { DocumentTemplateRepository } from '@/src/modules/templates/infrastructure/repositories/document-template.repository';
-import { RBACService } from '@/src/modules/users/domain/services/rbac.service';
-import { UserRepository } from '@/src/modules/users/infrastructure/repositories/user.repository';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 import { AppDataSource } from '@/src/shared/db/data-source';
-
-async function getTemplateUseCases() {
-  if (!AppDataSource.isInitialized) {
-    await AppDataSource.initialize();
-  }
-
-  const templateRepository = new DocumentTemplateRepository(AppDataSource);
-  const userRepository = new UserRepository(AppDataSource);
-  const rbacService = new RBACService();
-
-  return {
-    createTemplateUseCase: new CreateTemplateUseCase(templateRepository, userRepository, rbacService),
-    listTemplatesUseCase: new ListTemplatesUseCase(templateRepository, userRepository),
-  };
-}
+import { DocumentTemplateRepository } from '@/src/modules/templates/infrastructure/repositories/document-template.repository';
+import { ListTemplatesUseCase, CreateTemplateUseCase } from '@/src/modules/templates/application/use-cases/manage-templates.use-cases';
+import { UserRepository } from '@/src/modules/users/infrastructure/repositories/user.repository';
+import { RBACService } from '@/src/modules/users/domain/services/rbac.service';
 
 export async function GET(request: NextRequest) {
   try {
+    // Obtener requesterUserId del query string
     const requesterUserId = request.nextUrl.searchParams.get('requesterUserId');
 
     if (!requesterUserId) {
       return NextResponse.json({ error: 'requesterUserId is required' }, { status: 400 });
     }
 
-    const { listTemplatesUseCase } = await getTemplateUseCases();
-    const templates = await listTemplatesUseCase.execute({ requesterUserId });
+    // Inicializar BD
+    if (!AppDataSource.isInitialized) {
+      await AppDataSource.initialize();
+    }
+
+    // Crear repositorios
+    const templateRepo = new DocumentTemplateRepository(AppDataSource);
+    const userRepo = new UserRepository(AppDataSource);
+
+    // Ejecutar use case
+    const listUseCase = new ListTemplatesUseCase(templateRepo, userRepo);
+    const templates = await listUseCase.execute({ requesterUserId });
 
     return NextResponse.json(templates, { status: 200 });
   } catch (error) {
-    return mapErrorToResponse(error);
+    console.error('[api/templates GET]', error);
+    return handleError(error);
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { requesterUserId, templateName, folioPrefix, craftSchemaJson } = body;
+    const { requesterUserId, templateName, folioPrefix, fabricSchemaJson, craftSchemaJson } = body;
+    const schema = fabricSchemaJson ?? craftSchemaJson;
 
-    if (!requesterUserId || !templateName || !folioPrefix || !craftSchemaJson) {
+    if (!requesterUserId || !templateName || !folioPrefix || !schema) {
       return NextResponse.json(
-        { error: 'requesterUserId, templateName, folioPrefix and craftSchemaJson are required' },
-        { status: 400 },
+        {
+          error:
+            'requesterUserId, templateName, folioPrefix and (fabricSchemaJson or craftSchemaJson) are required',
+        },
+        { status: 400 }
       );
     }
 
-    const { createTemplateUseCase } = await getTemplateUseCases();
-    const created = await createTemplateUseCase.execute({
+    // Inicializar BD
+    if (!AppDataSource.isInitialized) {
+      await AppDataSource.initialize();
+    }
+
+    // Crear repositorios
+    const templateRepo = new DocumentTemplateRepository(AppDataSource);
+    const userRepo = new UserRepository(AppDataSource);
+    const rbacService = new RBACService();
+
+    // Ejecutar use case
+    const createUseCase = new CreateTemplateUseCase(templateRepo, userRepo, rbacService);
+    const created = await createUseCase.execute({
       requesterUserId,
       templateName,
       folioPrefix,
-      craftSchemaJson,
+      craftSchemaJson: schema,
     });
 
     return NextResponse.json(created, { status: 201 });
   } catch (error) {
-    return mapErrorToResponse(error);
+    console.error('[api/templates POST]', error);
+    return handleError(error);
   }
 }
 
-function mapErrorToResponse(error: unknown): NextResponse {
+function handleError(error: unknown): NextResponse {
   const message = error instanceof Error ? error.message : 'Unexpected error';
 
   if (message.includes('not found')) {
@@ -82,5 +92,5 @@ function mapErrorToResponse(error: unknown): NextResponse {
     return NextResponse.json({ error: message }, { status: 409 });
   }
 
-  return NextResponse.json({ error: message }, { status: 400 });
+  return NextResponse.json({ error: message }, { status: 500 });
 }
