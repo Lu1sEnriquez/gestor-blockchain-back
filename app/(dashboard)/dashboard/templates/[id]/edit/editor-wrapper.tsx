@@ -112,7 +112,7 @@ export function TemplateEditorWrapper({
   }
 
   return (
-    <div className="flex flex-col   padding-0 border-amber-50 ">
+    <div className="flex flex-col    ">
       {/* <div className="flex items-center justify-between">
         <Button variant="outline" asChild>
           <Link href="/dashboard/templates">
