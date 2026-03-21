@@ -50,13 +50,24 @@ export function TemplateEditorWrapper({
     loadTemplate();
   }, [templateId, userId]);
 
-  const handleSave = async (scene: Record<string, unknown>) => {
+  const handleSave = async (scene: Record<string, unknown>, nextTemplateName: string) => {
     try {
       await bffClient.templates.update({
         requesterUserId: userId,
         templateId,
+        templateName: nextTemplateName,
         fabricSchemaJson: scene,
       });
+
+      setTemplate((current) =>
+        current
+          ? {
+              ...current,
+              templateName: nextTemplateName,
+            }
+          : current
+      );
+
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 2000);
     } catch (err) {
@@ -101,8 +112,8 @@ export function TemplateEditorWrapper({
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col   padding-0 border-amber-50 ">
+      {/* <div className="flex items-center justify-between">
         <Button variant="outline" asChild>
           <Link href="/dashboard/templates">
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -114,7 +125,7 @@ export function TemplateEditorWrapper({
             Cambios guardados
           </div>
         )}
-      </div>
+      </div> */}
       <TemplateBuilderShell
         templateId={templateId}
         templateName={template.templateName}
