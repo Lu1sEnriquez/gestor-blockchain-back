@@ -2,135 +2,113 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { cn } from '@/lib/utils';
 import { getNavigationForRoles, type NavSection } from '@/lib/navigation';
 import type { UserRole } from '@/lib/types';
-import { FileCheck } from 'lucide-react';
+import { FileCheck, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarRail,
+  useSidebar,
+} from '@/components/ui/sidebar';
 
-interface SidebarProps {
+interface AppSidebarProps {
   userRoles: UserRole[];
 }
 
-export function Sidebar({ userRoles }: SidebarProps) {
+export function AppSidebar({ userRoles }: AppSidebarProps) {
   const pathname = usePathname();
   const navigation = getNavigationForRoles(userRoles);
+  const { isMobile, setOpenMobile } = useSidebar();
 
   return (
-    <aside className="hidden w-64 flex-col border-r bg-sidebar lg:flex">
+    <Sidebar collapsible="icon">
       {/* Logo / Branding */}
-      <div className="flex h-16 items-center gap-2 border-b px-6">
-        <FileCheck className="h-6 w-6 text-primary" />
-        <div className="flex flex-col">
-          <span className="text-sm font-semibold text-sidebar-foreground">
-            Gestor Documental
-          </span>
-          <span className="text-xs text-muted-foreground">ITSON</span>
-        </div>
-      </div>
+      <SidebarHeader>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <div className="flex items-center gap-2">
+              <SidebarMenuButton size="lg" asChild className="flex-1">
+                <Link href="/dashboard">
+                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                    <FileCheck className="size-4" />
+                  </div>
+                  <div className="flex flex-col gap-0.5 leading-none">
+                    <span className="font-semibold">Gestor Documental</span>
+                    <span className="text-xs text-muted-foreground">ITSON</span>
+                  </div>
+                </Link>
+              </SidebarMenuButton>
+
+              {isMobile && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => setOpenMobile(false)}
+                  aria-label="Cerrar sidebar"
+                >
+                  <X className="size-4" />
+                </Button>
+              )}
+            </div>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarHeader>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto p-4">
-        <div className="flex flex-col gap-6">
-          {navigation.map((section) => (
-            <SidebarSection
-              key={section.title}
-              section={section}
-              currentPath={pathname}
-            />
-          ))}
-        </div>
-      </nav>
-    </aside>
+      <SidebarContent>
+        {navigation.map((section) => (
+          <SidebarNavSection
+            key={section.title}
+            section={section}
+            currentPath={pathname}
+          />
+        ))}
+      </SidebarContent>
+
+      <SidebarRail />
+    </Sidebar>
   );
 }
 
-interface SidebarSectionProps {
+interface SidebarNavSectionProps {
   section: NavSection;
   currentPath: string;
 }
 
-function SidebarSection({ section, currentPath }: SidebarSectionProps) {
+function SidebarNavSection({ section, currentPath }: SidebarNavSectionProps) {
   return (
-    <div className="flex flex-col gap-1">
-      <span className="px-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-        {section.title}
-      </span>
-      <ul className="flex flex-col gap-1">
-        {section.items.map((item) => {
-          const isActive =
-            currentPath === item.href ||
-            (item.href !== '/dashboard' && currentPath.startsWith(item.href));
+    <SidebarGroup>
+      <SidebarGroupLabel>{section.title}</SidebarGroupLabel>
+      <SidebarGroupContent>
+        <SidebarMenu>
+          {section.items.map((item) => {
+            const isActive =
+              currentPath === item.href ||
+              (item.href !== '/dashboard' && currentPath.startsWith(item.href));
 
-          return (
-            <li key={item.href}>
-              <Link
-                href={item.href}
-                className={cn(
-                  'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                    : 'text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
-                )}
-              >
-                <item.icon className="h-4 w-4" />
-                {item.title}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
-  );
-}
-
-// Mobile sidebar (sheet-based)
-export function MobileSidebar({ userRoles }: SidebarProps) {
-  const pathname = usePathname();
-  const navigation = getNavigationForRoles(userRoles);
-
-  return (
-    <nav className="flex flex-col gap-6 p-4">
-      {/* Logo */}
-      <div className="flex items-center gap-2 px-3">
-        <FileCheck className="h-6 w-6 text-primary" />
-        <div className="flex flex-col">
-          <span className="text-sm font-semibold">Gestor Documental</span>
-          <span className="text-xs text-muted-foreground">ITSON</span>
-        </div>
-      </div>
-
-      {/* Navigation */}
-      {navigation.map((section) => (
-        <div key={section.title} className="flex flex-col gap-1">
-          <span className="px-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            {section.title}
-          </span>
-          <ul className="flex flex-col gap-1">
-            {section.items.map((item) => {
-              const isActive =
-                pathname === item.href ||
-                (item.href !== '/dashboard' && pathname.startsWith(item.href));
-
-              return (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    className={cn(
-                      'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                      isActive
-                        ? 'bg-accent text-accent-foreground'
-                        : 'hover:bg-accent/50'
-                    )}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    {item.title}
+            return (
+              <SidebarMenuItem key={item.href}>
+                <SidebarMenuButton asChild isActive={isActive} tooltip={item.title}>
+                  <Link href={item.href}>
+                    <item.icon />
+                    <span>{item.title}</span>
                   </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      ))}
-    </nav>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          })}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
   );
 }

@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react';
-import { Sidebar } from './sidebar';
+import { AppSidebar } from './sidebar';
 import { Header } from './header';
 import type { SessionUser } from '@/lib/auth/config';
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 interface DashboardShellProps {
   user: SessionUser;
@@ -10,16 +12,15 @@ interface DashboardShellProps {
 
 export function DashboardShell({ user, children }: DashboardShellProps) {
   return (
-    <div className="flex min-h-screen">
-      {/* Sidebar - desktop only */}
-      <Sidebar userRoles={user.roles} />
-
-      {/* Main content area */}
-      <div className="flex flex-1 flex-col">
-        <Header user={user} />
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6">{children}</main>
-      </div>
-    </div>
+    <TooltipProvider>
+      <SidebarProvider>
+        <AppSidebar userRoles={user.roles} />
+        <SidebarInset>
+          <Header user={user} />
+          <main className="flex-1 overflow-y-auto p-4 lg:p-6">{children}</main>
+        </SidebarInset>
+      </SidebarProvider>
+    </TooltipProvider>
   );
 }
 

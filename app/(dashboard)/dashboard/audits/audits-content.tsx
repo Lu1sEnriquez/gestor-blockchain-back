@@ -93,9 +93,9 @@ export function AuditsContent({ userId }: AuditsContentProps) {
   // Filtrar por busqueda
   const filteredAudits = audits.filter(
     (audit) =>
-      audit.userFullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      audit.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      audit.affectedEntityId.toLowerCase().includes(searchQuery.toLowerCase())
+      audit?.userFullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      audit?.action?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      audit?.affectedEntityId?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
