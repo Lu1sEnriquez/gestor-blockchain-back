@@ -6,7 +6,9 @@ import type { RuntimeCanvas } from '@/components/template-builder/types/fabric-r
  */
 export function useCanvasNavigation(
   workspaceRef: React.RefObject<HTMLDivElement | null>,
+  canvasElementRef: React.RefObject<HTMLCanvasElement | null>,
   runtimeCanvasRef: React.RefObject<RuntimeCanvas | null>,
+  zoom: number,
   setZoom: (zoom: number) => void,
   setPan: (pan: { x: number; y: number }) => void,
 ) {
@@ -21,37 +23,20 @@ export function useCanvasNavigation(
 
   useEffect(() => {
     const workspace = workspaceRef.current;
-    const runtimeCanvas = runtimeCanvasRef.current as
-      | (RuntimeCanvas & {
-          getZoom?: () => number;
-          zoomToPoint?: (point: { x: number; y: number }, zoom: number) => void;
-        })
-      | null;
-
-    if (!workspace || !runtimeCanvas) {
+    if (!workspace) {
       return;
     }
 
     const onWheel = (event: WheelEvent) => {
-      if (
-        !event.ctrlKey ||
-        typeof runtimeCanvas.getZoom !== 'function' ||
-        typeof runtimeCanvas.zoomToPoint !== 'function'
-      ) {
+      if (!event.ctrlKey) {
         return;
       }
 
       event.preventDefault();
-      const currentZoom = runtimeCanvas.getZoom();
       const nextZoom = Math.min(
-        Math.max(currentZoom * (event.deltaY > 0 ? 0.95 : 1.05), 0.25),
+        Math.max(zoom * (event.deltaY > 0 ? 0.95 : 1.05), 0.25),
         4,
       );
-      runtimeCanvas.zoomToPoint(
-        { x: event.offsetX, y: event.offsetY },
-        nextZoom,
-      );
-      runtimeCanvas.requestRenderAll();
       setZoom(nextZoom);
     };
 
@@ -114,5 +99,5 @@ export function useCanvasNavigation(
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
     };
-  }, [workspaceRef, runtimeCanvasRef, setPan, setZoom]);
+  }, [canvasElementRef, workspaceRef, runtimeCanvasRef, setPan, setZoom, zoom]);
 }
