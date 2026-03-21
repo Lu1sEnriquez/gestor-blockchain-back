@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, AlertCircle } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LoadingState, ErrorState } from '@/components/dashboard/shell';
-import { TemplateEditor } from '@/components/editor/template-editor';
+import { TemplateBuilderShell } from '@/components/template-builder/template-builder-shell';
 import { bffClient } from '@/lib/bff/client';
 import type { Template, BffError } from '@/lib/types';
 
@@ -50,18 +50,17 @@ export function TemplateEditorWrapper({
     loadTemplate();
   }, [templateId, userId]);
 
-  const handleSave = async (schema: Record<string, unknown>) => {
-    // WORKAROUND: No hay endpoint de update, guardamos en localStorage temporalmente
-    // TODO: Implementar PUT /api/templates/:id cuando exista
+  const handleSave = async (scene: Record<string, unknown>) => {
     try {
-      localStorage.setItem(
-        `template_schema_${templateId}`,
-        JSON.stringify(schema)
-      );
+      await bffClient.templates.update({
+        requesterUserId: userId,
+        templateId,
+        fabricSchemaJson: scene,
+      });
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 2000);
     } catch (err) {
-      console.error('[v0] Error saving schema:', err);
+      console.error('[template-builder] Error saving schema:', err);
       throw err;
     }
   };
@@ -116,10 +115,10 @@ export function TemplateEditorWrapper({
           </div>
         )}
       </div>
-      <TemplateEditor
+      <TemplateBuilderShell
         templateId={templateId}
         templateName={template.templateName}
-        initialSchema={template.craftSchemaJson}
+        initialScene={template.fabricSchemaJson ?? template.craftSchemaJson}
         onSave={handleSave}
       />
     </div>

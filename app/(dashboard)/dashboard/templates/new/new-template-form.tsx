@@ -18,27 +18,11 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { useCreateTemplate } from '@/hooks/use-templates';
+import { DEFAULT_FABRIC_SCENE } from '@/components/template-builder/defaults';
 
 interface NewTemplateFormProps {
   userId: string;
 }
-
-// Default Craft.js schema for a blank template
-const DEFAULT_CRAFT_SCHEMA = {
-  ROOT: {
-    type: { resolvedName: 'Container' },
-    isCanvas: true,
-    props: {
-      width: '210mm',
-      height: '297mm',
-      padding: 20,
-      background: '#ffffff',
-    },
-    displayName: 'Documento',
-    custom: {},
-    nodes: [],
-  },
-};
 
 export function NewTemplateForm({ userId }: NewTemplateFormProps) {
   const router = useRouter();
@@ -81,15 +65,11 @@ export function NewTemplateForm({ userId }: NewTemplateFormProps) {
       return;
     }
 
-    const craftSchema = {
-      ...DEFAULT_CRAFT_SCHEMA,
-      ROOT: {
-        ...DEFAULT_CRAFT_SCHEMA.ROOT,
-        props: {
-          ...DEFAULT_CRAFT_SCHEMA.ROOT.props,
-          templateName,
-          description,
-        },
+    const initialFabricScene = {
+      ...DEFAULT_FABRIC_SCENE,
+      metadata: {
+        templateName,
+        description,
       },
     };
 
@@ -97,7 +77,8 @@ export function NewTemplateForm({ userId }: NewTemplateFormProps) {
       requesterUserId: userId,
       templateName: templateName.trim(),
       folioPrefix: folioPrefix.toUpperCase().trim(),
-      craftSchemaJson: craftSchema,
+      fabricSchemaJson: initialFabricScene,
+      craftSchemaJson: initialFabricScene,
     });
 
     if (result) {
