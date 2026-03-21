@@ -1,10 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Minus, Plus, Scan } from "lucide-react";
 import {
   DEFAULT_FABRIC_SCENE,
   DEFAULT_TEMPLATE_PAGE_SETTINGS,
 } from "@/components/template-builder/defaults";
+import { Button } from "@/components/ui/button";
 import { useTemplateBuilderStore } from "@/components/template-builder/store/use-template-builder-store";
 import type {
   FabricTemplateScene,
@@ -92,6 +94,7 @@ export function FabricCanvas({
   );
   const setZoom = useTemplateBuilderStore((state) => state.setZoom);
   const setPan = useTemplateBuilderStore((state) => state.setPan);
+  const zoom = useTemplateBuilderStore((state) => state.zoom);
   const setSelectedObject = useTemplateBuilderStore(
     (state) => state.setSelectedObject,
   );
@@ -165,7 +168,14 @@ export function FabricCanvas({
     setSelectedObject,
   );
 
-  useCanvasNavigation(workspaceRef, runtimeCanvasRef, setZoom, setPan);
+  useCanvasNavigation(
+    workspaceRef,
+    canvasElementRef,
+    runtimeCanvasRef,
+    zoom,
+    setZoom,
+    setPan,
+  );
 
   useCanvasDropZone(workspaceRef, runtimeCanvasRef, fabricModuleRef, templateId);
 
@@ -229,7 +239,6 @@ export function FabricCanvas({
 
     event.preventDefault();
 
-    const workspaceRect = workspace.getBoundingClientRect();
     const canvasRect = canvasElementRef.current?.getBoundingClientRect();
 
     // Coordenadas relativas a la ventana del navegador para el trigger (fixed positioning)
@@ -256,35 +265,158 @@ export function FabricCanvas({
     setContextMenu({ x, y, canvasLeft, canvasTop, hasSelection, isLocked });
   };
 
+  const applyZoomFromCenter = useCallback(
+    (factor: number) => {
+      const nextZoom = Math.min(Math.max(zoom * factor, 0.25), 4);
+      setZoom(nextZoom);
+    },
+    [setZoom, zoom],
+  );
+
+  const handleZoomOut = useCallback(() => {
+    applyZoomFromCenter(0.9);
+  }, [applyZoomFromCenter]);
+
+  const handleZoomIn = useCallback(() => {
+    applyZoomFromCenter(1.1);
+  }, [applyZoomFromCenter]);
+
+  const handleZoomReset = useCallback(() => {
+    setZoom(1);
+  }, [setZoom]);
+
+  const handleZoomFitToSheet = useCallback(() => {
+    const workspace = workspaceRef.current;
+    if (!workspace) {
+      return;
+    }
+
+    const padding = 48;
+    const availableWidth = Math.max(workspace.clientWidth - padding, 200);
+    const availableHeight = Math.max(workspace.clientHeight - padding, 200);
+    const pageWidth = Math.max(pageSettingsRef.current.width + 24, 1);
+    const pageHeight = Math.max(pageSettingsRef.current.height + 24, 1);
+    const fitZoom = Math.min(
+      Math.max(Math.min(availableWidth / pageWidth, availableHeight / pageHeight), 0.25),
+      4,
+    );
+
+    setZoom(fitZoom);
+
+    requestAnimationFrame(() => {
+      workspace.scrollLeft = Math.max(
+        (workspace.scrollWidth - workspace.clientWidth) / 2,
+        0,
+      );
+      workspace.scrollTop = Math.max(
+        (workspace.scrollHeight - workspace.clientHeight) / 2,
+        0,
+      );
+    });
+  }, [setZoom]);
+
+  useEffect(() => {
+    let frame = requestAnimationFrame(() => {
+      handleZoomFitToSheet();
+    });
+
+    const onResize = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        handleZoomFitToSheet();
+      });
+    };
+
+    window.addEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      cancelAnimationFrame(frame);
+    };
+  }, [handleZoomFitToSheet]);
+
   // ── Render ──
   return (
-    <div
-      ref={workspaceRef}
-      className="relative flex h-full overflow-auto bg-slate-300 p-10"
-      onContextMenu={onWorkspaceContextMenu}
-    >
-      <div className="m-auto rounded-xl border border-slate-300 bg-white p-3 shadow-[0_16px_42px_rgba(15,23,42,0.24)]">
-        <canvas ref={canvasElementRef} className="block cursor-crosshair" />
+    <div className="relative h-full overflow-hidden">
+      <div
+        ref={workspaceRef}
+        className="flex h-full overflow-auto bg-slate-300 p-10"
+        onContextMenu={onWorkspaceContextMenu}
+      >
+        <div
+          className="m-auto"
+          style={{ transform: `scale(${zoom})`, transformOrigin: "center center" }}
+        >
+          <div className="rounded-xl border border-slate-300 bg-white p-3 shadow-[0_16px_42px_rgba(15,23,42,0.24)]">
+            <canvas ref={canvasElementRef} className="block cursor-crosshair" />
+          </div>
+        </div>
+        {mode === "edit" && (
+          <FloatingToolbar
+            workspaceRef={workspaceRef}
+            canvasElementRef={canvasElementRef}
+            runtimeCanvasRef={runtimeCanvasRef}
+            fabricModuleRef={fabricModuleRef}
+            onDuplicate={runtimeActions.duplicate}
+            onDelete={runtimeActions.remove}
+            isContextMenuOpen={!!contextMenu}
+          />
+        )}
+        {contextMenu ? (
+          <CanvasContextMenu
+            menu={contextMenu}
+            onClose={() => setContextMenu(null)}
+            runtimeCanvasRef={runtimeCanvasRef}
+            fabricModuleRef={fabricModuleRef}
+            contextClipboardRef={contextClipboardRef}
+          />
+        ) : null}
       </div>
-      {mode === "edit" && (
-        <FloatingToolbar
-          workspaceRef={workspaceRef}
-          canvasElementRef={canvasElementRef}
-          runtimeCanvasRef={runtimeCanvasRef}
-          fabricModuleRef={fabricModuleRef}
-          onDuplicate={runtimeActions.duplicate}
-          onDelete={runtimeActions.remove}
-          isContextMenuOpen={!!contextMenu}
-        />
-      )}
-      {contextMenu ? (
-        <CanvasContextMenu
-          menu={contextMenu}
-          onClose={() => setContextMenu(null)}
-          runtimeCanvasRef={runtimeCanvasRef}
-          fabricModuleRef={fabricModuleRef}
-          contextClipboardRef={contextClipboardRef}
-        />
+
+      {mode === "edit" ? (
+        <div className="pointer-events-none absolute inset-0 z-30">
+          <div className="pointer-events-auto absolute bottom-4 right-4 flex items-center gap-1 rounded-lg border border-slate-200 bg-white/95 p-1.5 shadow-sm backdrop-blur">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              onClick={handleZoomOut}
+              aria-label="Alejar"
+              title="Alejar"
+            >
+              <Minus className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleZoomReset}
+              className="min-w-16"
+              title="Restablecer zoom"
+            >
+              {Math.round(zoom * 100)}%
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              onClick={handleZoomFitToSheet}
+              aria-label="Encajar hoja"
+              title="Encajar hoja completa"
+            >
+              <Scan className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              onClick={handleZoomIn}
+              aria-label="Acercar"
+              title="Acercar"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
       ) : null}
     </div>
   );
