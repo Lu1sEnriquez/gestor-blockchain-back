@@ -58,7 +58,7 @@ export function EditorCanvasToolbar({
 }: EditorCanvasToolbarProps) {
   return (
  // Mantenemos el alto fijo en 300px para que nada lo mueva
-    <div className="h-[300px] w-full border-b border-slate-200 bg-white overflow-hidden">
+    <div className=" w-full border-b border-slate-200 bg-white overflow-hidden">
 
       {/* Usamos items-stretch para que los contenedores hijos puedan llenar el alto.
          p-0 para que los botones laterales lleguen hasta los bordes si es necesario.
