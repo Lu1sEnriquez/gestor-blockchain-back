@@ -62,6 +62,8 @@ export type CanvasCommand =
   | { type: 'align'; value: AlignCommand }
   | { type: 'z-order'; value: ZOrderCommand }
   | { type: 'toggle-lock' }
+  | { type: 'group' }
+  | { type: 'ungroup' }
   | { type: 'apply-text-style'; value: TextStyleChanges }
   | { type: 'set-page'; value: Partial<TemplatePageSettings> }
   | { type: 'set-geometry'; value: ObjectGeometryChanges }

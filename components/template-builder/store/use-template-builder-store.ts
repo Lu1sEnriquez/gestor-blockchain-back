@@ -15,7 +15,7 @@ import type {
 } from '@/components/template-builder/types';
 
 type RuntimeCanvas = {
-  loadFromJSON: (json: Record<string, unknown>, callback?: () => void) => void;
+  loadFromJSON: (json: Record<string, unknown>, callback?: () => void) => void | Promise<unknown>;
   requestRenderAll: () => void;
 };
 
@@ -43,6 +43,8 @@ interface TemplateBuilderState {
   attributes: TemplateAttribute[];
   dirty: boolean;
   history: HistoryState;
+  /** When true, canvas events must NOT call pushHistory (undo/redo in progress). */
+  _skipHistory: boolean;
   setTemplateId: (templateId: string) => void;
   toggleMode: () => void;
   initCanvas: (canvas: RuntimeCanvas | null) => void;
@@ -123,6 +125,7 @@ export const useTemplateBuilderStore = create<TemplateBuilderState>((set, get) =
   pendingCanvasCommand: null,
   attributes: DEFAULT_TEMPLATE_ATTRIBUTES,
   dirty: false,
+  _skipHistory: false,
   history: {
     past: [],
     future: [],
@@ -257,11 +260,10 @@ export const useTemplateBuilderStore = create<TemplateBuilderState>((set, get) =
     }
 
     const currentSnapshot = JSON.stringify(state.scene);
-    state.canvas?.loadFromJSON(previousScene as Record<string, unknown>, () => {
-      state.canvas?.requestRenderAll();
-    });
 
+    // Suppress history saves triggered by loadFromJSON canvas events
     set({
+      _skipHistory: true,
       scene: previousScene,
       dirty: true,
       history: {
@@ -269,6 +271,20 @@ export const useTemplateBuilderStore = create<TemplateBuilderState>((set, get) =
         future: [currentSnapshot, ...state.history.future],
       },
     });
+
+    const maybePromise = state.canvas?.loadFromJSON(
+      previousScene as Record<string, unknown>,
+    );
+    const finish = () => {
+      state.canvas?.requestRenderAll();
+      set({ _skipHistory: false });
+    };
+
+    if (maybePromise && typeof (maybePromise as Promise<unknown>).then === 'function') {
+      (maybePromise as Promise<unknown>).then(finish).catch(finish);
+    } else {
+      finish();
+    }
   },
   redo: () => {
     const state = get();
@@ -284,11 +300,10 @@ export const useTemplateBuilderStore = create<TemplateBuilderState>((set, get) =
     }
 
     const currentSnapshot = JSON.stringify(state.scene);
-    state.canvas?.loadFromJSON(nextScene as Record<string, unknown>, () => {
-      state.canvas?.requestRenderAll();
-    });
 
+    // Suppress history saves triggered by loadFromJSON canvas events
     set({
+      _skipHistory: true,
       scene: nextScene,
       dirty: true,
       history: {
@@ -296,6 +311,20 @@ export const useTemplateBuilderStore = create<TemplateBuilderState>((set, get) =
         future: state.history.future.slice(1),
       },
     });
+
+    const maybePromise = state.canvas?.loadFromJSON(
+      nextScene as Record<string, unknown>,
+    );
+    const finish = () => {
+      state.canvas?.requestRenderAll();
+      set({ _skipHistory: false });
+    };
+
+    if (maybePromise && typeof (maybePromise as Promise<unknown>).then === 'function') {
+      (maybePromise as Promise<unknown>).then(finish).catch(finish);
+    } else {
+      finish();
+    }
   },
 }));
 

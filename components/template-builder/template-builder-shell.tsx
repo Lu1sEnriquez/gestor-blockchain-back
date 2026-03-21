@@ -6,7 +6,6 @@ import { Eye, Loader2, Redo2, Save, Undo2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { TemplateBuilderSidebar } from '@/components/template-builder/sidebar';
 import { TemplateBuilderPropertiesPanel } from '@/components/template-builder/properties-panel';
-import { FloatingToolbar } from '@/components/template-builder/floating-toolbar';
 import { useTemplateBuilderStore } from '@/components/template-builder/store/use-template-builder-store';
 import { useEditorShortcuts } from '@/hooks/use-editor-shortcuts';
 import { DEFAULT_FABRIC_SCENE } from '@/components/template-builder/defaults';
@@ -34,12 +33,6 @@ interface TemplateBuilderShellProps {
   onSave: (scene: Record<string, unknown>) => Promise<void>;
 }
 
-interface RuntimeActions {
-  duplicate: () => void;
-  bringToFront: () => void;
-  sendToBack: () => void;
-  remove: () => void;
-}
 
 const PLACEHOLDER_PATTERN = /^\s*\{\{\s*([a-zA-Z0-9_]+)\s*\}\}\s*$/;
 
@@ -207,13 +200,6 @@ function buildSceneSavePayload(scene: FabricTemplateScene): Record<string, unkno
   };
 }
 
-const EMPTY_ACTIONS: RuntimeActions = {
-  duplicate: () => {},
-  bringToFront: () => {},
-  sendToBack: () => {},
-  remove: () => {},
-};
-
 export function TemplateBuilderShell({
   templateId,
   templateName,
@@ -223,11 +209,9 @@ export function TemplateBuilderShell({
   useEditorShortcuts();
 
   const [isSaving, setIsSaving] = useState(false);
-  const [runtimeActions, setRuntimeActions] = useState<RuntimeActions>(EMPTY_ACTIONS);
 
   const mode = useTemplateBuilderStore((state) => state.mode);
   const dirty = useTemplateBuilderStore((state) => state.dirty);
-  const selectedObject = useTemplateBuilderStore((state) => state.selectedObject);
   const scene = useTemplateBuilderStore((state) => state.scene);
   const setTemplateId = useTemplateBuilderStore((state) => state.setTemplateId);
   const toggleMode = useTemplateBuilderStore((state) => state.toggleMode);
@@ -283,10 +267,6 @@ export function TemplateBuilderShell({
     [setScene]
   );
 
-  const handleCanvasReady = useCallback((actions: RuntimeActions) => {
-    setRuntimeActions(actions);
-  }, []);
-
   return (
     <div className="flex h-[calc(100vh-8rem)] flex-col overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
       <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-2.5">
@@ -328,19 +308,9 @@ export function TemplateBuilderShell({
       <div className="relative flex flex-1 overflow-hidden">
         {mode === 'edit' && <TemplateBuilderSidebar />}
         <div className="relative flex-1">
-          {mode === 'edit' && (
-            <FloatingToolbar
-              disabled={!selectedObject}
-              onDuplicate={runtimeActions.duplicate}
-              onBringToFront={runtimeActions.bringToFront}
-              onSendToBack={runtimeActions.sendToBack}
-              onDelete={runtimeActions.remove}
-            />
-          )}
           <FabricCanvas
             initialScene={hydratedScene as Record<string, unknown>}
             onSceneChange={handleSceneChange}
-            onReady={handleCanvasReady}
           />
         </div>
         {mode === 'edit' && <TemplateBuilderPropertiesPanel />}
