@@ -18,6 +18,15 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+} from '@/components/ui/sidebar';
 import { useTemplateBuilderStore } from '@/components/template-builder/store/use-template-builder-store';
 import { TEMPLATE_BUILDER_SECTIONS } from '@/components/template-builder/defaults';
 import type {
@@ -25,6 +34,7 @@ import type {
   TemplateAttribute,
   TemplateBuilderSidebarSection,
 } from '@/components/template-builder/types';
+import { PanelLeft } from 'lucide-react';
 
 const CATEGORY_ORDER: Array<'evento' | 'titular' | 'sistema'> = ['evento', 'titular', 'sistema'];
 
@@ -102,6 +112,7 @@ export function TemplateBuilderSidebar() {
   const [newKey, setNewKey] = useState('');
   const [newCategory, setNewCategory] = useState<'evento' | 'titular' | 'sistema'>('titular');
   const [newDataType, setNewDataType] = useState<AttributeDataType>('text');
+  const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [uploadHint, setUploadHint] = useState('Arrastra una imagen aqui o selecciona un archivo.');
   const [uploadState, setUploadState] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -449,38 +460,75 @@ export function TemplateBuilderSidebar() {
   };
 
   return (
-    <aside className="flex h-full w-108 border-r border-slate-200 bg-slate-50">
-      <nav className="flex w-20 flex-col border-r border-slate-200 bg-white py-2">
-        {TEMPLATE_BUILDER_SECTIONS.map((section) => {
-          const Icon = SECTION_ICONS[section.id];
-          const active = section.id === activeSidebarSection;
-          return (
-            <button
-              key={section.id}
-              type="button"
-              onClick={() => setActiveSidebarSection(section.id)}
-              className={`flex flex-col items-center gap-1 px-2 py-3 text-[11px] transition-colors ${
-                active
-                  ? 'border-r-2 border-blue-600 bg-blue-50 text-blue-700'
-                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
-              }`}
-            >
-              <Icon className="h-4 w-4" />
-              <span className="text-center leading-tight">{section.label}</span>
-            </button>
-          );
-        })}
-      </nav>
+    <SidebarProvider className="h-full w-auto min-h-0 min-w-0 shrink-0">
+      <div className={`${sidebarExpanded ? 'w-108' : 'w-20'} h-full shrink-0 transition-all duration-200`}>
+        <Sidebar collapsible="none" className="h-full w-full border-r border-slate-200">
+          <SidebarHeader className="border-b border-slate-200 bg-white ">
+            <div className={`flex items-center ${sidebarExpanded ? 'justify-between' : 'justify-center'}`}  >
+              {sidebarExpanded ? (
+                <p className="text-xs font-semibold tracking-[0.18em] text-slate-500">Editor</p>
+              ) : (
+                <span className="sr-only">Editor</span>
+              )}
+              <Button
+                type="button"
+                variant="outline"
+                className="h-9 w-10   border-slate-200 text-slate-700 hover:bg-slate-100"
+                onClick={() => setSidebarExpanded((current) => !current)}
+              >
+                <PanelLeft className="h-10 w-10 " />
+                <span className="sr-only">Alternar sidebar</span>
+              </Button>
+            </div>
+          </SidebarHeader>
 
-      <div className="flex-1 overflow-y-auto p-4">
-        <div>
-          <p className="text-xs font-semibold tracking-[0.18em] text-slate-500">Editor</p>
-          <h3 className="mt-1 text-sm font-semibold text-slate-900">
-            {TEMPLATE_BUILDER_SECTIONS.find((section) => section.id === activeSidebarSection)?.label}
-          </h3>
-        </div>
-        <div className="mt-4 space-y-4">{renderActiveSection()}</div>
+          <SidebarContent className="bg-slate-50">
+            <div className="flex h-full min-h-0">
+              <nav className="flex w-20 shrink-0 flex-col border-r border-slate-200 bg-white py-2 items-center">
+  <SidebarMenu className="flex w-full flex-col items-center gap-2">
+    {TEMPLATE_BUILDER_SECTIONS.map((section) => {
+      const Icon = SECTION_ICONS[section.id];
+      const active = section.id === activeSidebarSection;
+
+      return (
+        <SidebarMenuItem key={section.id} className="w-full px-2">
+          <SidebarMenuButton
+            type="button"
+            isActive={active}
+            className={`
+              flex h-auto w-full flex-col items-center justify-center gap-1.5 py-3 rounded-md transition-all
+              ${
+                active
+                  ? 'bg-blue-50 text-blue-700 hover:bg-blue-50'
+                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+              }
+            `}
+            onClick={() => {
+              setActiveSidebarSection(section.id);
+              setSidebarExpanded(true);
+            }}
+          >
+            <Icon className="h-5 w-5" />
+            <span className="text-[10px] font-medium text-center leading-none">
+              {section.label}
+            </span>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      );
+    })}
+  </SidebarMenu>
+</nav>
+
+              <div className={`flex-1 overflow-y-auto p-4 ${sidebarExpanded ? '' : 'hidden'}`}>
+                <h3 className="text-sm font-semibold text-slate-900">
+                  {TEMPLATE_BUILDER_SECTIONS.find((section) => section.id === activeSidebarSection)?.label}
+                </h3>
+                <div className="mt-4 space-y-4">{renderActiveSection()}</div>
+              </div>
+            </div>
+          </SidebarContent>
+        </Sidebar>
       </div>
-    </aside>
+    </SidebarProvider>
   );
 }

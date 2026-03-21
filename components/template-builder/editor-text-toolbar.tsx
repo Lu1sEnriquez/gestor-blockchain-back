@@ -59,26 +59,24 @@ export function EditorCanvasToolbar({
   return (
  // Mantenemos el alto fijo en 300px para que nada lo mueva
     <div className="h-[300px] w-full border-b border-slate-200 bg-white overflow-hidden">
-      
+
       {/* Usamos items-stretch para que los contenedores hijos puedan llenar el alto.
          p-0 para que los botones laterales lleguen hasta los bordes si es necesario.
       */}
       <div className="flex h-full items-stretch p-0">
-        
+
         {/* LADO IZQUIERDO: Botón Sidebar - Ocupa todo el alto */}
         <div className="flex flex-row border-r border-slate-100 min-w-[80px]">
-          <Button
+          {/* <Button
             type="button"
             variant={isSidebarVisible ? "secondary" : "ghost"}
-            // h-full para estirarse, rounded-none para estética de sidebar
             className="flex-1 flex-col gap-2 rounded-none border-b border-slate-100 h-full py-6"
             onClick={onToggleSidebar}
           >
             <PanelRightOpen className={`h-6 w-6 transition-transform duration-300 ${isSidebarVisible ? "" : "rotate-180"}`} />
             <span className="text-[10px] font-medium  tracking-wider">Sidebar</span>
-          </Button>
-          
-          {/* Controles de Undo/Redo en la parte inferior del bloque izquierdo */}
+          </Button> */}
+
           <div className="flex p-2 gap-1 justify-center bg-slate-50/50">
             <Button variant="ghost" size="icon-sm" onClick={onUndo} className="h-9 w-9">
               <Undo2 className="h-4 w-4" />
@@ -273,20 +271,19 @@ export function EditorCanvasToolbar({
         )}
       </div>
      {/* LADO DERECHO: Botón Props - Ocupa todo el alto */}
-        <div className="flex flex-col border-l border-slate-100 min-w-[80px]">
+        {/* <div className="flex flex-col border-l border-slate-100 min-w-[80px]">
           <Button
             type="button"
             variant={isPropertiesVisible ? "secondary" : "ghost"}
-            // h-full y flex-col para que el icono y el texto se apilen verticalmente
             className="h-full flex-col gap-2 rounded-none py-6"
             onClick={onToggleProperties}
           >
             <PanelRightOpen size={10} className={` transition-transform duration-300 ${isPropertiesVisible ? "rotate-180" : ""}`} />
             <span className="text-[10px] font-medium  tracking-wider">Propiedades</span>
           </Button>
-        </div>
+        </div> */}
     </div>
     </div>
-    
+
   );
 }

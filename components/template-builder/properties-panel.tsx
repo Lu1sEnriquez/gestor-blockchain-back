@@ -19,10 +19,11 @@ import {
   Italic,
   ImagePlus,
   Lock,
+  PanelLeft,
   Trash2,
   Underline,
 } from 'lucide-react';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -105,6 +106,7 @@ function scaledHeight(obj: SelectedObjectState): number {
 
 export function TemplateBuilderPropertiesPanel() {
   const bgFileInputRef = useRef<HTMLInputElement | null>(null);
+  const [propertiesExpanded, setPropertiesExpanded] = useState(true);
   const templateId = useTemplateBuilderStore((state) => state.templateId);
   const selectedObject = useTemplateBuilderStore((state) => state.selectedObject);
   const pageSettings = useTemplateBuilderStore((state) => state.pageSettings);
@@ -131,15 +133,30 @@ export function TemplateBuilderPropertiesPanel() {
   const showFieldId = category && category !== 'plantilla';
 
   return (
-    <aside className="flex h-full w-80 flex-col gap-4 overflow-y-auto border-l border-slate-200 bg-slate-50 p-4">
-      <div>
-        <p className="text-xs font-semibold tracking-[0.18em] text-slate-500">Inspector</p>
-        <h3 className="mt-1 text-sm font-semibold text-slate-900">Propiedades</h3>
+    <div className={`${propertiesExpanded ? 'w-80' : 'w-12'} h-full shrink-0 transition-all duration-200 flex flex-col`}>
+      {/* Header Fijo */}
+      <div className={`${propertiesExpanded ? 'justify-between' : 'justify-center'} flex items-center justify-between border-b border-slate-200 bg-slate-50 p-4 shrink-0`}>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className="h-8 w-8 border-slate-200 text-slate-700 hover:bg-slate-100"
+          onClick={() => setPropertiesExpanded((current) => !current)}
+        >
+          <PanelLeft className="h-4 w-4" />
+          <span className="sr-only">Alternar propiedades</span>
+        </Button>
+        <div className={propertiesExpanded ? '' : 'hidden'}>
+          <p className="text-xs font-semibold tracking-[0.18em] text-slate-500">Inspector</p>
+          <h3 className="mt-1 text-sm font-semibold text-slate-900">Propiedades</h3>
+        </div>
       </div>
 
-      {/* ── HOJA (Canvas Root) ── */}
-      <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-4">
-        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Hoja</p>
+      {/* Contenido Desplazable */}
+      <aside className="flex-1 w-full overflow-y-auto border-l border-slate-200 bg-slate-50 p-4 flex flex-col gap-4">
+        <div className={propertiesExpanded ? '' : 'hidden'}>
+          <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Hoja</p>
 
         <div className="space-y-2">
           <Label htmlFor="page-format">Formato</Label>
@@ -573,6 +590,8 @@ export function TemplateBuilderPropertiesPanel() {
           </div>
         </>
       )}
-    </aside>
+        </div>
+      </aside>
+    </div>
   );
 }
