@@ -61,17 +61,39 @@ export function useCanvasInsertions(
       return;
     }
 
-    // If a Textbox was being edited, insert the placeholder into it
+    // Try the textbox that was being edited first, then fall back to the active object
     const editingTextbox = lastEditingTextboxRef.current;
+    const activeObj = runtimeCanvas.getActiveObject() as Record<string, unknown> | null;
+    const textTarget = editingTextbox ?? activeObj;
+
     if (
-      editingTextbox &&
-      typeof (editingTextbox as { insertChars?: unknown }).insertChars ===
-        'function'
+      textTarget &&
+      typeof (textTarget as { insertChars?: unknown }).insertChars === 'function'
     ) {
+      // Textbox is in editing mode — insert at cursor
       const placeholder = `{{${attribute.key}}}`;
-      (editingTextbox as { insertChars: (text: string) => void }).insertChars(
-        placeholder,
-      );
+      (textTarget as { insertChars: (text: string) => void }).insertChars(placeholder);
+      runtimeCanvas.requestRenderAll();
+      markAttributeInUse(attribute.id);
+      consumeAttributeInsertion();
+      return;
+    }
+
+    // Active object is a Textbox but NOT in editing mode — append placeholder to its text
+    if (
+      activeObj &&
+      typeof (activeObj as { type?: string }).type === 'string' &&
+      ((activeObj as { type: string }).type.toLowerCase().includes('text') ||
+        (activeObj as { type: string }).type.toLowerCase().includes('itext'))
+    ) {
+      const currentText = String((activeObj as { text?: string }).text ?? '');
+      const placeholder = `{{${attribute.key}}}`;
+      if (typeof (activeObj as { set?: unknown }).set === 'function') {
+        (activeObj as { set: (props: Record<string, unknown>) => void }).set({
+          text: currentText + placeholder,
+        });
+      }
+      (activeObj as { setCoords?: () => void }).setCoords?.();
       runtimeCanvas.requestRenderAll();
       markAttributeInUse(attribute.id);
       consumeAttributeInsertion();
