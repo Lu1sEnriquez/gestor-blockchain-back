@@ -106,6 +106,7 @@ export function FloatingToolbar({
   const attributes = useTemplateBuilderStore((s) => s.attributes);
   const zoom = useTemplateBuilderStore((s) => s.zoom);
   const activeSidebarSection = useTemplateBuilderStore((s) => s.activeSidebarSection);
+  const storeCanvas = useTemplateBuilderStore((s) => s.canvas);
 
   const isMultiSelect = activeObjects.length > 1;
   const hasSingleSelection = activeObjects.length === 1;
@@ -169,7 +170,7 @@ export function FloatingToolbar({
       canvas.off('object:modified', onInteractEnd);
       canvas.off('mouse:up', onMouseUp);
     };
-  }, [runtimeCanvasRef, updatePosition]);
+  }, [runtimeCanvasRef, updatePosition, storeCanvas]);
 
   // Update on scroll (workspace is the scrollable container)
   useEffect(() => {
