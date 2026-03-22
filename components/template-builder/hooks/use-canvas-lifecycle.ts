@@ -249,15 +249,15 @@ export function useCanvasLifecycle(
             runtimeCanvas.requestRenderAll();
           };
 
-          const maybePromise =
-            (clone as RuntimeFabricObject['clone'])!.length === 0
-              ? (clone as () => Promise<Record<string, unknown>>)()
-              : undefined;
-
-          if (maybePromise) {
-            maybePromise.then(placeDuplicate).catch(() => {
-              // Ignore clone errors to avoid breaking toolbar actions.
-            });
+          // Fabric v6 uses callbacks; Fabric v7 always returns a Promise.
+          // Try Promise first (v7), fall back to callback (v6).
+          const cloneResult = (clone as () => unknown).call(source);
+          if (cloneResult && typeof (cloneResult as Promise<unknown>).then === 'function') {
+            (cloneResult as Promise<Record<string, unknown>>)
+              .then(placeDuplicate)
+              .catch(() => {
+                // Ignore clone errors to avoid breaking toolbar actions.
+              });
             return;
           }
 

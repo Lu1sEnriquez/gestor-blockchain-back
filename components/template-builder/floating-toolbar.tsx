@@ -131,13 +131,21 @@ export function FloatingToolbar({
       updatePosition();
     };
 
+    let isDragging = false;
+
     const onInteractStart = () => {
+      isDragging = true;
       setInteracting(true);
     };
 
     const onInteractEnd = () => {
+      isDragging = false;
       setInteracting(false);
       requestAnimationFrame(updatePosition);
+    };
+
+    const onMouseUp = () => {
+      if (isDragging) onInteractEnd();
     };
 
     canvas.on('selection:created', onSelectionChange);
@@ -147,7 +155,7 @@ export function FloatingToolbar({
     canvas.on('object:scaling', onInteractStart);
     canvas.on('object:rotating', onInteractStart);
     canvas.on('object:modified', onInteractEnd);
-    canvas.on('mouse:up', onInteractEnd);
+    canvas.on('mouse:up', onMouseUp);
 
     onSelectionChange();
 
@@ -159,7 +167,7 @@ export function FloatingToolbar({
       canvas.off('object:scaling', onInteractStart);
       canvas.off('object:rotating', onInteractStart);
       canvas.off('object:modified', onInteractEnd);
-      canvas.off('mouse:up', onInteractEnd);
+      canvas.off('mouse:up', onMouseUp);
     };
   }, [runtimeCanvasRef, updatePosition]);
 
@@ -384,8 +392,61 @@ export function FloatingToolbar({
 
       {/* Move handle: fixed, centered below selection */}
       <div
-        className="pointer-events-none fixed z-40 -translate-x-1/2 rounded-full border border-slate-200 bg-white/95 p-2 shadow-lg"
+        className="pointer-events-auto fixed z-40 -translate-x-1/2 cursor-grab rounded-full border border-slate-200 bg-white/95 p-2 shadow-lg active:cursor-grabbing"
         style={{ left: rect.cx, top: rect.bottom + MOVE_HANDLE_GAP }}
+        onPointerDown={(e) => {
+          const canvasEl = canvasElementRef.current;
+          const runtimeCanvas = runtimeCanvasRef.current;
+          if (!canvasEl || !runtimeCanvas) return;
+          e.preventDefault();
+          e.stopPropagation();
+
+          const active = runtimeCanvas.getActiveObject() as Record<string, unknown> | null | undefined;
+          if (!active) return;
+
+          // CSS scale applied to the canvas wrapper (zoom)
+          const canvasRect = canvasEl.getBoundingClientRect();
+          const cssScale = canvasRect.width / canvasEl.offsetWidth;
+
+          let prevClientX = e.clientX;
+          let prevClientY = e.clientY;
+
+          setInteracting(true);
+          (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+
+          const onMove = (moveEvt: PointerEvent) => {
+            // Delta in viewport pixels → convert to canvas pixels via cssScale
+            const dx = (moveEvt.clientX - prevClientX) / cssScale;
+            const dy = (moveEvt.clientY - prevClientY) / cssScale;
+            prevClientX = moveEvt.clientX;
+            prevClientY = moveEvt.clientY;
+
+            const currentLeft = Number((active as Record<string, unknown>).left ?? 0);
+            const currentTop = Number((active as Record<string, unknown>).top ?? 0);
+
+            if (typeof (active as { set?: unknown }).set === 'function') {
+              (active as { set: (p: Record<string, unknown>) => void }).set({
+                left: currentLeft + dx,
+                top: currentTop + dy,
+              });
+            }
+            (active as { setCoords?: () => void }).setCoords?.();
+            runtimeCanvas.requestRenderAll();
+            requestAnimationFrame(updatePosition);
+          };
+
+          const onUp = () => {
+            setInteracting(false);
+            // Notify Fabric that the object was modified so history saves
+            runtimeCanvas.fire('object:modified', { target: active });
+            requestAnimationFrame(updatePosition);
+            window.removeEventListener('pointermove', onMove);
+            window.removeEventListener('pointerup', onUp);
+          };
+
+          window.addEventListener('pointermove', onMove);
+          window.addEventListener('pointerup', onUp);
+        }}
       >
         <Move className="h-5 w-5 text-slate-700" />
       </div>

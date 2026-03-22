@@ -8,6 +8,7 @@ export type RuntimeCanvas = {
   add: (...args: unknown[]) => void;
   on: (event: string, callback: (...args: unknown[]) => void) => void;
   off: (event: string, callback: (...args: unknown[]) => void) => void;
+  fire: (event: string, options?: Record<string, unknown>) => void;
   dispose: () => void;
   getObjects: () => Array<Record<string, unknown>>;
   getActiveObject: () => Record<string, unknown> | null;

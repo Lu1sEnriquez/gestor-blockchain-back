@@ -190,8 +190,10 @@ export function toggleObjectLock(active: RuntimeFabricObject): void {
       lockRotation: nextLocked,
       lockScalingX: nextLocked,
       lockScalingY: nextLocked,
-      selectable: !nextLocked,
-      evented: !nextLocked,
+      // Keep selectable and evented true so locked objects can still be
+      // clicked to reveal the unlock button in the floating toolbar.
+      selectable: true,
+      evented: true,
     });
   }
   active.setCoords?.();

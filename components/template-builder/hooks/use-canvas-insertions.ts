@@ -68,9 +68,10 @@ export function useCanvasInsertions(
 
     if (
       textTarget &&
+      (textTarget as { isEditing?: boolean }).isEditing === true &&
       typeof (textTarget as { insertChars?: unknown }).insertChars === 'function'
     ) {
-      // Textbox is in editing mode — insert at cursor
+      // Textbox is actively in editing mode — insert at cursor
       const placeholder = `{{${attribute.key}}}`;
       (textTarget as { insertChars: (text: string) => void }).insertChars(placeholder);
       runtimeCanvas.requestRenderAll();
