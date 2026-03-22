@@ -114,13 +114,30 @@ export function useCanvasLifecycle(
       // Guard flag — suppress syncScene during loadFromJSON
       let isHydrating = true;
 
+      // Guard flag — suppress intermediate history saves during active drag/transform.
+      // Set to true when a transform begins (before:transform) and cleared when the
+      // object is released (object:modified). This prevents every mouse-move position
+      // from being recorded as a separate undo step.
+      let isTransforming = false;
+
       const syncScene = () => {
         if (isHydrating) return;
         // Skip history saves when undo/redo is reloading the canvas
         if (useTemplateBuilderStore.getState()._skipHistory) return;
+        // Skip intermediate positions recorded while the user is still dragging
+        if (isTransforming) return;
         const scene = serializeScene(runtimeCanvas, pageSettingsRef.current);
         pushHistory(scene);
         onSceneChangeRef.current?.(scene);
+      };
+
+      const onBeforeTransform = () => {
+        isTransforming = true;
+      };
+
+      const onObjectModified = () => {
+        isTransforming = false;
+        syncScene();
       };
 
       // Pre-load fonts
@@ -191,7 +208,10 @@ export function useCanvasLifecycle(
       runtimeCanvas.on('selection:created', syncSelection);
       runtimeCanvas.on('selection:updated', syncSelection);
       runtimeCanvas.on('selection:cleared', syncSelection);
-      runtimeCanvas.on('object:modified', syncScene);
+      // before:transform fires when the user starts dragging/scaling/rotating;
+      // object:modified fires once when they release — so each gesture = 1 history entry.
+      runtimeCanvas.on('before:transform', onBeforeTransform);
+      runtimeCanvas.on('object:modified', onObjectModified);
       runtimeCanvas.on('object:added', syncScene);
       runtimeCanvas.on('object:removed', syncScene);
 
