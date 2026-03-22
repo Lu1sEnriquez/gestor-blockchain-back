@@ -35,3 +35,22 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 "# gestor-blockchain-back" 
+
+## Template Builder Image Storage
+
+Configura estas variables para guardar imagenes del editor en disco local (Windows/Linux) y controlar la URL publica:
+
+- `TEMPLATE_IMAGES_DIR`: carpeta raiz para archivos. Ejemplo Windows: `C:/gestor-blockchain`.
+- `TEMPLATE_IMAGES_BASE_URL`: base URL para construir `publicUrl`. Ejemplo: `http://localhost:3000`.
+- `TEMPLATE_IMAGES_FOLDER_STRATEGY`: estrategia de carpetas.
+	- `template` (default): `<root>/templates/<templateId>/...`
+	- `user-template`: `<root>/users/<creatorId>/templates/<templateId>/...`
+	- `scope-template`: `<root>/scopes/<scope>/templates/<templateId>/...`
+
+Ejemplo recomendado para VPS/local:
+
+```env
+TEMPLATE_IMAGES_DIR=C:/gestor-blockchain
+TEMPLATE_IMAGES_BASE_URL=http://localhost:3000
+TEMPLATE_IMAGES_FOLDER_STRATEGY=user-template
+```

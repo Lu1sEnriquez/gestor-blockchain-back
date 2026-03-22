@@ -68,3 +68,54 @@ export class ListTemplatesUseCase {
     return this.templateRepository.findAll();
   }
 }
+
+export interface UpdateTemplateDTO {
+  requesterUserId: string;
+  templateId: string;
+  templateName?: string;
+  folioPrefix?: string;
+  craftSchemaJson: Record<string, unknown>;
+}
+
+export class UpdateTemplateUseCase {
+  constructor(
+    private readonly templateRepository: DocumentTemplateRepository,
+    private readonly userRepository: UserRepository,
+    private readonly rbacService: RBACService,
+  ) {}
+
+  async execute(dto: UpdateTemplateDTO): Promise<DocumentTemplateEntity> {
+    const requester = await this.userRepository.findById(dto.requesterUserId);
+    if (!requester) {
+      throw new Error(`Requester user with ID ${dto.requesterUserId} not found`);
+    }
+
+    const canEditTemplate = requester.rolesAssigned.some((role) =>
+      this.rbacService.canCreateTemplate(role),
+    );
+
+    if (!canEditTemplate) {
+      throw new Error(
+        `User ${dto.requesterUserId} (${requester.rolesAssigned.join(',')}) lacks create_template permission`,
+      );
+    }
+
+    const template = await this.templateRepository.findById(dto.templateId);
+    if (!template) {
+      throw new Error(`Template with ID ${dto.templateId} not found`);
+    }
+
+    if (dto.folioPrefix && dto.folioPrefix !== template.folioPrefix) {
+      const existing = await this.templateRepository.findByFolioPrefix(dto.folioPrefix);
+      if (existing && existing.id !== template.id) {
+        throw new Error(`Template with folioPrefix ${dto.folioPrefix} already exists`);
+      }
+    }
+
+    template.templateName = dto.templateName ?? template.templateName;
+    template.folioPrefix = dto.folioPrefix ?? template.folioPrefix;
+    template.craftSchemaJson = dto.craftSchemaJson;
+
+    return this.templateRepository.save(template);
+  }
+}
